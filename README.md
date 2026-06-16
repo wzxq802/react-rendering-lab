@@ -6,9 +6,9 @@
 ## Стек
 
 - **React 19** + **TypeScript**
-- **Vite** — сборщик и dev-сервер
-- **TailwindCSS** — стили
-- **Архитектура:** Feature-Sliced Design (`app` / `pages` / `widgets` / `features` / `entities` / `shared`)
+- **Vite** 
+- **TailwindCSS** 
+- **Архитектура:** Feature-Sliced Design 
 
 ## Запуск
 
