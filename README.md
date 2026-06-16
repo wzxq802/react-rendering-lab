@@ -1,73 +1,50 @@
-# React + TypeScript + Vite
+# React Performance Playground
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Учебный проект для практики профилирования и оптимизации React-приложений.
+Список из 5000 элементов с поиском, фильтрацией и сортировкой.
 
-Currently, two official plugins are available:
+## Стек
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **React 19** + **TypeScript**
+- **Vite** — сборщик и dev-сервер
+- **TailwindCSS** — стили
+- **Архитектура:** Feature-Sliced Design (`app` / `pages` / `widgets` / `features` / `entities` / `shared`)
 
-## React Compiler
+## Запуск
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Функциональность
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+- Рендеринг списка из **5000** моковых элементов (`shared/lib/mockItems.ts`)
+- **Поиск** по title и description (case-insensitive)
+- **Сортировка** по title / createdAt / priority, asc/desc
+- **Фильтрация** по status (`todo` / `in_progress` / `done`) и priority (`low` / `medium` / `high`)
+- Кнопка сброса всех фильтров и сортировки
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## Проблемы до оптимизации
+
+- При каждом нажатии в поиске пересчитывался массив из 5000 элементов
+  → коммит доходил до **~400мс**, ререндерились все 5000 карточек
+- Любое изменение фильтра/сортировки вызывало ререндер всех карточек
+
+## Что оптимизировано
+
+- **`useMemo`** в `useItemList` — мемоизация результата search → filter → sort
+- **`useDebouncedValue` (250мс)** — задерживает обновление поискового запроса
+- **`React.memo`** для `ItemCard` — пропуск ререндеров неизменённых карточек
+- **`<Profiler>`** в `App.tsx` — логирование `actualDuration` каждого коммита в консоль
+
+## Результаты
+
+Замеры сняты в React DevTools → Profiler при наборе слова из 5 букв в поиске
+и переключении фильтра приоритета.
+
+| Метрика | До | После |
+|---|---|---|
+| `actualDuration` коммита при поиске (max) | ~400мс | ~31.5мс |
+| Коммитов на слово из 5 букв | 5 | 1 |
+| Ререндер всех 5000 карточек при изменении state | да | нет (`Did not render`) |
